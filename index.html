@@ -227,6 +227,50 @@ body{
 }
 .note::before{content:'';flex:0 0 10px;height:14px;background:var(--yellow);border:1px solid var(--ink);margin-top:5px}
 
+/* ---------- pending queue ---------- */
+.qrows{border-top:1px solid var(--ink)}
+.qrow{
+  display:grid;grid-template-columns:86px 170px 1fr 130px auto;gap:18px;align-items:center;
+  padding:15px 6px 15px 0;border-bottom:1px solid var(--line);
+  position:relative;
+  opacity:0;transform:translateY(14px);
+  animation:rowIn .45s var(--snap) forwards;
+  transition:transform .18s var(--snap),background .15s var(--snap);
+}
+.qrow:hover{transform:translateX(6px);background:rgba(255,250,0,.18)}
+.qrow::after{
+  content:'';position:absolute;right:0;top:0;width:11px;height:11px;
+  background:var(--yellow);outline:1px solid var(--ink);
+  clip-path:polygon(0 0,100% 0,100% 100%);
+}
+.qrow .no{
+  justify-self:start;color:var(--ink);
+  font-family:'Saira',sans-serif;font-stretch:112%;font-weight:800;font-size:13px;
+  padding:3px 10px 3px 8px;letter-spacing:.08em;
+  border:1.5px solid var(--ink);
+  clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,0 100%);
+}
+.qrow .who{font-weight:900;font-size:16px;letter-spacing:.05em}
+.qrow .who small{
+  display:inline-block;margin-left:8px;font-family:'Noto Sans SC';font-weight:700;font-size:10px;
+  letter-spacing:.14em;border:1px solid var(--ink);padding:1px 7px;vertical-align:2px;
+}
+.qrow .qt{font-weight:400;font-size:12.5px;line-height:1.6;color:var(--ink)}
+.qrow .win{font-family:'Saira','Noto Sans SC',sans-serif;font-stretch:112%;font-size:10px;letter-spacing:.14em;color:var(--ink60)}
+.qrow .win b{display:block;color:var(--ink);font-size:13px;font-weight:800;letter-spacing:.05em;margin-top:2px}
+.qrow .st{
+  font-family:'Saira','Noto Sans SC',sans-serif;font-stretch:112%;
+  font-size:10px;letter-spacing:.14em;font-weight:700;
+  border:1.5px solid var(--ink);padding:3px 10px;white-space:nowrap;background:transparent;
+}
+.qrow .st.hold{background:var(--yellow)}
+.qrow .st.wip{background:var(--ink);color:var(--paper)}
+@media(max-width:760px){
+  .qrow{grid-template-columns:60px 1fr;gap:8px 14px;padding-right:14px}
+  .qrow .win{grid-column:2}
+  .qrow .st{display:none}
+}
+
 /* footer */
 .ft{
   margin-top:44px;padding-top:14px;border-top:1px solid var(--line);
@@ -269,6 +313,7 @@ body{
   <nav class="seg" role="tablist">
     <button class="on" id="tabCal" role="tab" aria-selected="true">CALENDAR<small>日历</small></button>
     <button id="tabList" role="tab" aria-selected="false">RECORDS<small>清单</small></button>
+    <button id="tabQ" role="tab" aria-selected="false">QUEUE<small>待约</small></button>
   </nav>
   <div class="clock"><span class="lbl">SYNC</span><span id="clock">--</span></div>
 </header>
@@ -282,6 +327,7 @@ body{
       <span>RANGE <b>2026.11.01 — 12.31</b></span>
       <span>UPCOMING <b id="fUp">0</b></span>
       <span>DONE <b id="fDone">0</b></span>
+      <span>PENDING <b id="fQ">0</b></span>
       <span>CITIES <b id="fCities">—</b></span>
       <span>SRC <b>FEISHU CAL</b></span>
     </div>
@@ -315,6 +361,18 @@ body{
     <div class="rows" id="rows"></div>
   </section>
 
+  <section class="view" id="viewQ">
+    <div class="sec">
+      <div class="t">
+        <div class="eyebrow">// QUEUE</div>
+        <h2>待定事项</h2>
+      </div>
+      <div class="meta" id="qMeta">0 PENDING</div>
+    </div>
+    <div class="qrows" id="qrows"></div>
+    <div class="note">这些人、这些事还没定日期。想定档直接跟我说一声——「跟某某约好了几号干嘛」——我会把它排进日历，同时从这里划掉。格式：待约 · 人名 · 类型 · 时间窗 · 备注。</div>
+  </section>
+
   <footer class="ft">
     <span>UNOFFICIAL DESIGN TRIBUTE · NO GAME ASSETS USED</span>
     <span id="sync">SYNCED —</span>
@@ -335,6 +393,14 @@ const EVENTS = [
   { d:"2026-11-13", t:"15:00", nm:"刘慈欣 × WaytoAGI 科梦OPC社区见面会", loc:"成都 · 传媒·白鹭湾科创园4栋", tg:"MEETUP" },
   { d:"2026-11-14", t:"14:00", nm:"AI 游戏的下一种可能 · 线下 Demo Day", loc:"成都 · 双流中海财富中心", tg:"DEMO DAY" }
   /* DATA_SLOT */
+];
+
+/* ================ PENDING QUEUE ================
+   who : 对象    tp : 类型(约饭/访谈/交流...)   qt : 要聊什么
+   win : 期望时间窗   st : OPEN 待约出 / HOLD 等回复 / WIP 在敲定
+=================================================== */
+const PENDING = [
+  /* PENDING_SLOT */
 ];
 const TODAY = new Date();
 const WD = ['一','二','三','四','五','六','日'];
@@ -461,20 +527,54 @@ document.addEventListener('mouseover', e => {
   });
 });
 
+/* ---------- pending queue ---------- */
+function renderQ(){
+  const host = document.getElementById('qrows');
+  const meta = document.getElementById('qMeta');
+  const n = PENDING.length;
+  meta.textContent = `${n} PENDING`;
+  document.getElementById('fQ').textContent = n;
+  if(!n){
+    host.innerHTML = `<div class="row empty" style="animation-delay:.05s">
+      队列是空的 — 这里收「想跟某个人做、但还没定日期」的事:访谈、交流、约饭。<br>
+      直接跟我说「待约 · 人名 · 类型 · 时间窗 · 备注」,推上来就出现在这里。</div>`;
+    return;
+  }
+  const stMap = { OPEN:['待约出',''], HOLD:['等回复','hold'], WIP:['在敲定','wip'] };
+  host.innerHTML = PENDING.map((p,i)=>{
+    const [label, cls] = stMap[p.st] || stMap.OPEN;
+    return `<div class="qrow" style="animation-delay:${.05+i*.05}s">
+      <span class="no">Q-${pad(i+1)}</span>
+      <span class="who">${p.who}<small>${p.tp}</small></span>
+      <span class="qt">${p.qt || ''}</span>
+      <span class="win">WINDOW<b>${p.win || '待定'}</b></span>
+      <span class="st ${cls}">${label}</span>
+    </div>`;
+  }).join('');
+}
+renderQ();
+
 /* ---------- view toggle ---------- */
 const tabCal = document.getElementById('tabCal');
 const tabList = document.getElementById('tabList');
-function setView(cal){
-  tabCal.classList.toggle('on', cal);
-  tabList.classList.toggle('on', !cal);
-  tabCal.setAttribute('aria-selected', cal);
-  tabList.setAttribute('aria-selected', !cal);
-  document.getElementById('viewCal').classList.toggle('on', cal);
-  document.getElementById('viewList').classList.toggle('on', !cal);
+const tabQ = document.getElementById('tabQ');
+function setView(v){
+  tabCal.classList.toggle('on', v === 'cal');
+  tabList.classList.toggle('on', v === 'list');
+  tabQ.classList.toggle('on', v === 'q');
+  tabCal.setAttribute('aria-selected', v === 'cal');
+  tabList.setAttribute('aria-selected', v === 'list');
+  tabQ.setAttribute('aria-selected', v === 'q');
+  document.getElementById('viewCal').classList.toggle('on', v === 'cal');
+  document.getElementById('viewList').classList.toggle('on', v === 'list');
+  document.getElementById('viewQ').classList.toggle('on', v === 'q');
 }
-tabCal.onclick = () => setView(true);
-tabList.onclick = () => setView(false);
-if(location.search.includes('view=list')) setView(false);
+tabCal.onclick = () => setView('cal');
+tabList.onclick = () => setView('list');
+tabQ.onclick = () => setView('q');
+const qs = new URLSearchParams(location.search).get('view');
+if(qs === 'list') setView('list');
+else if(qs === 'queue') setView('q');
 
 /* sync stamp */
 document.getElementById('sync').textContent =
