@@ -148,8 +148,8 @@ body{
   font-size:10px;letter-spacing:.2em;font-weight:600;text-align:center;padding:5px 0;
 }
 .cell{
-  background:var(--board);min-height:74px;padding:5px 6px 4px;
-  position:relative;overflow:hidden;
+  background:var(--board);min-height:74px;min-width:0;padding:5px 6px 4px;
+  position:relative;overflow:visible;
   transition:background .2s var(--snap);
 }
 .cell .dnum{
@@ -170,6 +170,18 @@ body{
   border-left:2px solid var(--ink);padding:1px 4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   background:rgba(22,22,22,.05);
+}
+.ev-bar{
+  display:block;height:14px;margin-top:4px;
+  background:var(--ink);color:var(--paper);
+  font-size:9.5px;font-weight:700;line-height:14px;letter-spacing:.02em;
+  padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cell.past .ev-bar{opacity:.45}
+.ev-bar.cont-l{margin-left:-2px}
+.ev-bar.cont-r{margin-right:-2px;padding-right:6px}
+@media(max-width:560px){
+  .ev-bar{font-size:8.5px;height:13px;line-height:13px;margin-top:3px}
 }
 .cell.pin{outline:2px solid var(--ink);outline-offset:-2px;z-index:2}
 
@@ -494,9 +506,23 @@ function renderMonth(idx, y, m){
     if(wknd && !isPast) cls += ' wknd';
     if(isToday) cls += ' today';
     if(evs.length) cls += ' has-ev';
-    let chips = '';
-    evs.slice(0,2).forEach(ev => chips += `<span class="ev-chip" data-pin="${ev.d}|${ev.e||ev.d}">${ev.nm}</span>`);
-    if(evs.length > 2) chips += `<span class="ev-chip" data-pin="${evs[0].d}">+${evs.length-2} MORE</span>`;
+    const col = i % 7;
+    let chips = '', shown = 0;
+    const multi = evs.filter(ev => ev.e && ev.e !== ev.d);
+    const single = evs.filter(ev => !(ev.e && ev.e !== ev.d));
+    multi.slice(0,2).forEach(ev => {
+      const cls = ['ev-bar'];
+      if(col > 0 && ds > ev.d) cls.push('cont-l');
+      if(col < 6 && ds < ev.e) cls.push('cont-r');
+      const label = (ds === ev.d || col === 0) ? ev.nm : '';
+      chips += `<span class="${cls.join(' ')}" data-pin="${ev.d}|${ev.e}">${label}</span>`;
+      shown++;
+    });
+    single.slice(0,2).forEach(ev => {
+      chips += `<span class="ev-chip" data-pin="${ev.d}|${ev.d}">${ev.nm}</span>`;
+      shown++;
+    });
+    if(evs.length > shown) chips += `<span class="ev-chip" data-pin="${evs[0].d}|${evs[0].e||evs[0].d}">+${evs.length-shown} MORE</span>`;
     html += `<div class="${cls}" data-day="${ds}"><span class="dnum">${dn}</span>${chips}</div>`;
   }
   html += '</div>';
