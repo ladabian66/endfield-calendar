@@ -285,6 +285,40 @@ body{
 .view.on{display:block;animation:shutter .3s var(--mech) both}
 @keyframes shutter{from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
 
+/* ---------- mobile refinement ---------- */
+@media(max-width:760px){
+  .page{padding:24px 14px 40px}
+  .hd h1{font-size:clamp(32px,8.5vw,72px)}
+  .fields{font-size:11px}
+  .fields span{padding:0 10px}
+  .sec{margin:36px 0 16px}
+  .sec .t h2{font-size:22px}
+  .board{padding:16px 14px 12px}
+  .months{gap:24px}
+  .month .mh .mn{font-size:19px}
+  .wd{font-size:9px;padding:4px 0}
+  .cell{min-height:56px;padding:4px 4px 3px}
+  .cell .dnum{font-size:11px;line-height:16px;padding:0 4px}
+  .ev-chip{font-size:9px;margin-top:3px;padding:1px 3px}
+  .cmdbar{gap:10px;padding:0 12px}
+  .seg button{padding:6px 10px;font-size:10px}
+  .seg button small{margin-left:5px;letter-spacing:.1em}
+  .row{grid-template-columns:64px 1fr;gap:6px 12px;padding:11px 4px 11px 0}
+  .row .dt{font-size:15px}
+  .row .nm{font-size:14px}
+  .qrow{grid-template-columns:56px 1fr;gap:6px 12px;padding:12px 16px 12px 0}
+  .qrow .qt{grid-column:1 / -1}
+  .note{font-size:12px;padding:12px 14px}
+  .ft{font-size:9px}
+}
+@media(max-width:560px){
+  .cmdbar .sys .name{font-size:12px}
+  .seg button small{display:none}
+  .cmdbar .clock{display:none}
+  .cell{min-height:46px}
+  .cell .ev-chip:nth-of-type(n+2){display:none}
+}
+
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
 }
