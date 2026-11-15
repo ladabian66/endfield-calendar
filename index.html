@@ -297,6 +297,44 @@ body{
 .view.on{display:block;animation:shutter .3s var(--mech) both}
 @keyframes shutter{from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
 
+/* ---------- day expand drawer ---------- */
+.cell:not(.pad){cursor:pointer}
+.cell.sel{outline:2px solid var(--ink);outline-offset:-2px;z-index:2}
+.wk-exp{
+  grid-column:1 / -1;
+  background:var(--ink);color:var(--paper);
+  padding:12px 16px;
+  animation:expIn .25s var(--snap);
+}
+@keyframes expIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.wk-exp-head{
+  font-size:12px;font-weight:800;letter-spacing:.16em;
+  border-bottom:1px solid rgba(250,250,248,.25);
+  padding-bottom:8px;margin-bottom:4px;
+}
+.wk-exp-row{
+  display:grid;grid-template-columns:52px 96px 1fr auto;gap:14px;align-items:center;
+  padding:8px 0;border-bottom:1px solid rgba(250,250,248,.14);cursor:pointer;
+}
+.wk-exp-row:last-of-type{border-bottom:0}
+.wk-exp-row:hover{background:rgba(255,250,0,.1)}
+.we-no{font-size:10px;font-weight:700;opacity:.55}
+.we-tm{font-size:13px;font-weight:700;color:var(--acc);white-space:nowrap}
+.we-nm{font-size:14px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.we-nm .we-range{font-style:normal;font-size:11px;font-weight:600;opacity:.7;margin-left:8px}
+.we-nm .we-loc{display:block;font-size:11px;font-weight:500;opacity:.7;margin-top:2px}
+.we-tg{font-size:9px;font-weight:800;letter-spacing:.14em;border:1px solid currentColor;padding:2px 7px;white-space:nowrap}
+.we-tg.hot{color:var(--acc)}
+.wk-exp-empty{font-size:12px;opacity:.65;padding:8px 0 4px}
+@media(max-width:560px){
+  .wk-exp{padding:10px 12px}
+  .wk-exp-row{grid-template-columns:40px 1fr auto;row-gap:3px}
+  .we-tm{grid-column:2;grid-row:1}
+  .we-tg{grid-column:3;grid-row:1}
+  .we-nm{grid-column:1 / -1;grid-row:2;white-space:normal}
+  .we-nm .we-loc{margin-top:1px}
+}
+
 /* ---------- mobile refinement ---------- */
 @media(max-width:760px){
   .page{padding:24px 14px 40px}
@@ -435,9 +473,9 @@ const EVENTS = [
   { d:"2026-10-31", e:"2026-11-01", t:"09:00", nm:"枫客松 · 南京首场文旅主题黑客松", loc:"南京 · 栖霞山风景区", tg:"HACKATHON" },
   { d:"2026-11-01", t:"09:00", nm:"「锦创杯」青年黑客松 Day 2", loc:"成都 · 锦创源创享OPC社区(净居寺)", tg:"HACKATHON" },
   { d:"2026-11-03", t:"20:00", nm:"第七期 AI 硬件训练营 · 优秀学员分享 2", loc:"线上 · 飞书视频会议", tg:"TALK" },
-  { d:"2026-11-06", t:"12:30", nm:"Panda Jam · 成都科幻周 AI 游戏创作聚会", loc:"成都 · 成都传媒·白鹭湾科创园", tg:"GAME JAM" },
-  { d:"2026-11-13", t:"15:00", nm:"刘慈欣 × WaytoAGI 科梦OPC社区见面会", loc:"成都 · 传媒·白鹭湾科创园4栋", tg:"MEETUP" },
-  { d:"2026-11-14", t:"14:00", nm:"AI 游戏的下一种可能 · 线下 Demo Day", loc:"成都 · 双流中海财富中心", tg:"DEMO DAY" }
+  { d:"2026-11-06", t:"12:30–18:00", nm:"Panda Jam · 成都科幻周 AI 游戏创作聚会", loc:"成都 · 成都传媒·白鹭湾科创园", tg:"GAME JAM" },
+  { d:"2026-11-13", t:"15:00–17:00", nm:"刘慈欣 × WaytoAGI 科梦OPC社区见面会", loc:"成都 · 传媒·白鹭湾科创园4栋", tg:"MEETUP" },
+  { d:"2026-11-14", t:"14:00–17:00", nm:"AI 游戏的下一种可能 · 线下 Demo Day", loc:"成都 · 双流中海财富中心", tg:"DEMO DAY" }
   /* DATA_SLOT */
 ];
 
@@ -491,9 +529,8 @@ function renderMonth(idx, y, m){
   for(let i = 0; i < cells; i++){
     const dn = i - off + 1;
     if(dn < 1 || dn > dim){
-      html += `<div class="cell pad"><span class="dnum">${dn < 1 ? '' : ''}</span></div>`;
-      continue;
-    }
+      html += `<div class="cell pad"><span class="dnum"></span></div>`;
+    } else {
     const d = new Date(y, m, dn);
     const ds = dstr(d);
     const evs = evOn(ds);
@@ -524,6 +561,8 @@ function renderMonth(idx, y, m){
     });
     if(evs.length > shown) chips += `<span class="ev-chip" data-pin="${evs[0].d}|${evs[0].e||evs[0].d}">+${evs.length-shown} MORE</span>`;
     html += `<div class="${cls}" data-day="${ds}"><span class="dnum">${dn}</span>${chips}</div>`;
+    }
+    if((i + 1) % 7 === 0) html += '<div class="wk-exp" hidden></div>';
   }
   html += '</div>';
   host.innerHTML = html;
@@ -531,6 +570,49 @@ function renderMonth(idx, y, m){
 }
 
 MONTHS.forEach((mm, i) => renderMonth(i, mm[0], mm[1]));
+
+/* ---------- day expand drawer ---------- */
+function fillExp(host, ds){
+  const evs = evOn(ds);
+  const d = new Date(ds + 'T00:00:00');
+  const wk = ['SUN','MON','TUE','WED','THU','FRI','SAT'][d.getDay()];
+  host.dataset.day = ds;
+  const body = evs.length ? evs.map((ev, i) => {
+    const multi = ev.e && ev.e !== ev.d;
+    const done = isDone(ev.d);
+    return `<div class="wk-exp-row" data-pin="${ev.d}|${ev.e||ev.d}">
+      <span class="we-no">No.${pad(i+1)}</span>
+      <span class="we-tm latin">${ev.t || '待定'}</span>
+      <span class="we-nm">${ev.nm}${multi ? `<em class="we-range">→ ${ev.e.replace(/-/g,'.')}</em>` : ''}<small class="we-loc">${ev.loc || '地点待定'}</small></span>
+      <span class="we-tg${done ? '' : ' hot'}">${done ? 'COMPLETED' : (ev.tg || 'SCHEDULED')}</span>
+    </div>`;
+  }).join('') : `<div class="wk-exp-empty">当日无活动记录</div>`;
+  host.innerHTML = `<div class="wk-exp-head latin-wide">${ds.replace(/-/g,'.')} · ${wk} · ${evs.length} EVENT${evs.length===1?'':'S'}</div>` + body;
+}
+
+document.addEventListener('click', e => {
+  const cell = e.target.closest('.cell');
+  if(cell && cell.dataset.day){
+    const grid = cell.closest('.grid');
+    const cells = [...grid.querySelectorAll(':scope > .cell')];
+    const exps = [...grid.querySelectorAll(':scope > .wk-exp')];
+    const target = exps[Math.floor(cells.indexOf(cell) / 7)];
+    if(!target) return;
+    const wasOpen = !target.hidden && target.dataset.day === cell.dataset.day;
+    exps.forEach(x => x.hidden = true);
+    cells.forEach(c => c.classList.remove('sel'));
+    if(!wasOpen){
+      fillExp(target, cell.dataset.day);
+      target.hidden = false;
+      cell.classList.add('sel');
+    }
+    return;
+  }
+  if(!e.target.closest('.wk-exp')){
+    document.querySelectorAll('.wk-exp').forEach(x => x.hidden = true);
+    document.querySelectorAll('.cell.sel').forEach(c => c.classList.remove('sel'));
+  }
+});
 
 /* ---------- record rows ---------- */
 function renderRows(){
